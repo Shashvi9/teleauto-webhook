@@ -8,6 +8,16 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root route
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Dyes Webhook Service</h1>
+    <p>Status: Running</p>
+    <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
+    <p>Webhook URL: /webhook</p>
+  `);
+});
+
 // Configuration
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || 'your_whatsapp_access_token';
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || 'your_phone_number_id';
