@@ -104,25 +104,142 @@ const WHATSAPP_API_URL = `https://graph.facebook.com/v18.0/${WHATSAPP_PHONE_NUMB
 
 // Sample product catalog (in a real app, this would come from a database)
 const products = {
+  // Reactive Dyes
   'dye-001': {
     id: 'dye-001',
     name: 'Reactive Red 120',
     type: 'Reactive Dye',
+    category: 'reactive',
     application: 'Cotton, Silk, Wool',
     packaging: '25 kg HDPE drums',
     price: 1250,
     moq: '100 kg',
-    cas: '61951-82-4'
+    description: 'High-quality reactive dye with excellent wash fastness and bright shade.',
+    cas: '61951-82-4',
+    inStock: true
   },
+  'dye-002': {
+    id: 'dye-002',
+    name: 'Reactive Blue 19',
+    type: 'Reactive Dye',
+    category: 'reactive',
+    application: 'Cotton, Silk, Wool',
+    packaging: '25 kg HDPE drums',
+    price: 1350,
+    moq: '100 kg',
+    description: 'Brilliant blue reactive dye with high fixation rate and color stability.',
+    cas: '2580-78-1',
+    inStock: true
+  },
+  'dye-003': {
+    id: 'dye-003',
+    name: 'Reactive Yellow 86',
+    type: 'Reactive Dye',
+    category: 'reactive',
+    application: 'Cotton, Silk, Wool',
+    packaging: '25 kg HDPE drums',
+    price: 1150,
+    moq: '100 kg',
+    description: 'Vibrant yellow reactive dye with excellent light fastness properties.',
+    cas: '61951-86-8',
+    inStock: true
+  },
+  
+  // Direct Dyes
+  'dye-004': {
+    id: 'dye-004',
+    name: 'Direct Black 38',
+    type: 'Direct Dye',
+    category: 'direct',
+    application: 'Paper, Leather',
+    packaging: '20 kg bags',
+    price: 950,
+    moq: '80 kg',
+    description: 'Deep black direct dye with good light fastness for paper and leather applications.',
+    cas: '1937-37-7',
+    inStock: true
+  },
+  'dye-005': {
+    id: 'dye-005',
+    name: 'Direct Red 81',
+    type: 'Direct Dye',
+    category: 'direct',
+    application: 'Paper, Leather',
+    packaging: '20 kg bags',
+    price: 1050,
+    moq: '80 kg',
+    description: 'Bright red direct dye with excellent solubility and even dyeing properties.',
+    cas: '2610-11-9',
+    inStock: true
+  },
+  
+  // Acid Dyes
+  'dye-006': {
+    id: 'dye-006',
+    name: 'Acid Blue 9',
+    type: 'Acid Dye',
+    category: 'acid',
+    application: 'Nylon, Wool, Silk',
+    packaging: '15 kg cartons',
+    price: 1550,
+    moq: '60 kg',
+    description: 'Brilliant blue acid dye for protein fibers with excellent leveling properties.',
+    cas: '3844-45-9',
+    inStock: true
+  },
+  'dye-007': {
+    id: 'dye-007',
+    name: 'Acid Red 52',
+    type: 'Acid Dye',
+    category: 'acid',
+    application: 'Nylon, Wool, Silk',
+    packaging: '15 kg cartons',
+    price: 1650,
+    moq: '60 kg',
+    description: 'Bright red acid dye with high tinting strength and good light fastness.',
+    cas: '3520-42-1',
+    inStock: false
+  },
+  
+  // Intermediates
   'int-001': {
     id: 'int-001',
+    name: 'H-Acid',
+    type: 'Dye Intermediate',
+    category: 'intermediate',
+    application: 'Manufacturing of acid and reactive dyes',
+    packaging: '25 kg fiber drums',
+    price: 2250,
+    moq: '100 kg',
+    description: 'Key intermediate for synthesis of various acid and reactive dyes.',
+    cas: '90-20-0',
+    inStock: true
+  },
+  'int-002': {
+    id: 'int-002',
+    name: 'J-Acid',
+    type: 'Dye Intermediate',
+    category: 'intermediate',
+    application: 'Manufacturing of acid and reactive dyes',
+    packaging: '25 kg fiber drums',
+    price: 2150,
+    moq: '100 kg',
+    description: 'Essential intermediate for production of blue and navy dyes.',
+    cas: '92-70-6',
+    inStock: true
+  },
+  'int-003': {
+    id: 'int-003',
     name: 'Benzidine Intermediate',
     type: 'Chemical Intermediate',
+    category: 'intermediate',
     application: 'Dye manufacturing',
     packaging: '200 kg steel drums',
     price: 850,
     moq: '500 kg',
-    cas: '92-87-5'
+    description: 'Used in the synthesis of direct dyes.',
+    cas: '92-87-5',
+    inStock: true
   }
 };
 
@@ -191,194 +308,460 @@ const sendListMessage = async (to, header, body, sections) => {
   });
 };
 
+// User session tracking (in a real app, this would be in a database)
+const userSessions = {};
+
+// Helper function to get product categories
+const getProductCategories = () => {
+  const categories = {};
+  Object.values(products).forEach(product => {
+    if (!categories[product.category]) {
+      categories[product.category] = {
+        name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
+        description: product.type
+      };
+    }
+  });
+  return categories;
+};
+
+// Helper function to get products by category
+const getProductsByCategory = (category) => {
+  return Object.values(products).filter(product => product.category === category);
+};
+
+// Helper function to format product details
+const formatProductDetails = (product) => {
+  return `*${product.name}*\n\n` +
+    `*Type:* ${product.type}\n` +
+    `*Application:* ${product.application}\n` +
+    `*Packaging:* ${product.packaging}\n` +
+    `*Price:* $${product.price} per unit\n` +
+    `*MOQ:* ${product.moq}\n` +
+    `*CAS:* ${product.cas}\n` +
+    `*Availability:* ${product.inStock ? '✅ In Stock' : '❌ Out of Stock'}\n\n` +
+    `*Description:* ${product.description}`;
+};
+
 // Main message handler
 const handleIncomingMessage = async (from, message) => {
   try {
+    // Initialize user session if it doesn't exist
+    if (!userSessions[from]) {
+      userSessions[from] = {
+        lastInteraction: Date.now(),
+        context: 'welcome',
+        cart: [],
+        lastProductViewed: null
+      };
+    } else {
+      // Update last interaction time
+      userSessions[from].lastInteraction = Date.now();
+    }
+    
+    const session = userSessions[from];
+    
     const messageText = message.text?.body?.toLowerCase() || 
-                     message.interactive?.button_reply?.title?.toLowerCase() ||
-                     message.interactive?.list_reply?.title?.toLowerCase() || '';
+                     message.interactive?.button_reply?.id?.toLowerCase() ||
+                     message.interactive?.list_reply?.id?.toLowerCase() || '';
+    
+    console.log(`Received message from ${from}: ${messageText}`);
+    console.log(`User context: ${session.context}`);
+
+    // Reset command
+    if (messageText === 'reset' || messageText === 'restart') {
+      session.context = 'welcome';
+      await sendTextMessage(from, "I've reset our conversation. How can I help you today?");
+      return sendWelcomeMenu(from);
+    }
 
     // Welcome message and main menu
     if (messageText.includes('hi') || messageText.includes('hello') || 
-        messageText.includes('start') || messageText === 'main menu') {
+        messageText.includes('start') || messageText === 'main_menu' || session.context === 'welcome') {
       
-      const sections = [{
-        title: "Main Options",
-        rows: [
-          { id: "browse_products", title: "Browse Products", description: "View our range of dyes and intermediates" },
-          { id: "search_products", title: "Search Products", description: "Find specific products" },
-          { id: "request_quote", title: "Request Quote", description: "Get pricing for bulk orders" },
-          { id: "track_order", title: "Track Order", description: "Check status of your order" },
-          { id: "contact_support", title: "Contact Support", description: "Talk to our sales team" }
-        ]
-      }];
-
-      await sendListMessage(from, 
-        "🎨 Welcome to Dyes & Intermediates Bot!", 
-        "How can I assist you today? Select an option:",
-        sections
-      );
-      return;
+      return sendWelcomeMenu(from);
     }
-
-    // Handle Browse Products
-    if (messageText === 'browse products') {
-      const sections = [{
-        title: "Product Categories",
-        rows: [
-          { id: "cat_reactive", title: "Reactive Dyes", description: "For cotton, silk, and wool" },
-          { id: "cat_direct", title: "Direct Dyes", description: "For paper and leather" },
-          { id: "cat_intermediates", title: "Chemical Intermediates", description: "For dye manufacturing" },
-          { id: "cat_specialty", title: "Specialty Chemicals", description: "Custom formulations" }
-        ]
-      }];
-      
-      await sendListMessage(from, 
-        "🎨 Product Categories", 
-        "Select a category to browse products:",
-        sections
-      );
-      return;
+    
+    // Handle main menu selections
+    if (messageText === 'browse_products') {
+      session.context = 'browsing_categories';
+      return sendCategoryMenu(from);
     }
-
+    
     // Handle category selection
-    if (messageText.startsWith('cat_')) {
-      // In a real app, fetch products by category from database
-      const category = messageText.replace('cat_', '');
-      const categoryName = {
-        'reactive': 'Reactive Dyes',
-        'direct': 'Direct Dyes',
-        'intermediates': 'Chemical Intermediates',
-        'specialty': 'Specialty Chemicals'
-      }[category] || 'Products';
-
-      const productList = Object.values(products).filter(p => 
-        p.type.toLowerCase().includes(category) || category === 'all'
-      );
-
-      if (productList.length === 0) {
-        await sendTextMessage(from, `No products found in ${categoryName} category.`);
-        return;
+    if (session.context === 'browsing_categories') {
+      if (messageText.startsWith('category_')) {
+        const category = messageText.replace('category_', '');
+        session.context = 'browsing_products';
+        session.currentCategory = category;
+        return sendProductListByCategory(from, category);
       }
-
-      const sections = [{
-        title: categoryName,
-        rows: productList.slice(0, 10).map(product => ({
-          id: `prod_${product.id}`,
-          title: product.name,
-          description: `${product.type} | ${product.packaging}`
-        }))
-      }];
-      
-      await sendListMessage(from, 
-        `🎨 ${categoryName}`, 
-        `Available ${categoryName.toLowerCase()}. Select a product for details:`,
-        sections
-      );
-      return;
     }
-
-    // Handle product details
-    if (messageText.startsWith('prod_')) {
-      const productId = messageText.replace('prod_', '');
-      const product = products[productId];
-      
-      if (!product) {
-        await sendTextMessage(from, "Product not found.");
-        return;
-      }
-      
-      let productInfo = `*${product.name}*
-`;
-      productInfo += `Type: ${product.type}\n`;
-      productInfo += `Application: ${product.application}\n`;
-      productInfo += `Packaging: ${product.packaging}\n`;
-      productInfo += `MOQ: ${product.moq}\n`;
-      productInfo += `Price: ₹${product.price}/kg\n`;
-      productInfo += `CAS: ${product.cas}`;
-      
-      await sendTextMessage(from, productInfo);
-      
-      // Show action buttons
-      await sendInteractiveMessage(from, "Product Actions", "What would you like to do?", [
-        { id: `req_quote_${product.id}`, title: "Request Quote" },
-        { id: "browse_products", title: "Browse More Products" },
-        { id: "main_menu", title: "Main Menu" }
-      ]);
-      return;
-    }
-
-    // Handle quote request
-    if (messageText.startsWith('req_quote_') || messageText === 'request quote') {
-      let productId = messageText.replace('req_quote_', '');
-      
-      if (productId === 'request quote') {
-        // General quote request
-        await sendTextMessage(from, 
-          "📝 *Request a Quote*\n\n" +
-          "Please provide the following details:\n" +
-          "1. Product Name/Code\n" +
-          "2. Required Quantity\n" +
-          "3. Delivery Location\n" +
-          "4. Any special requirements\n\n" +
-          "Our sales team will contact you shortly with a quote."
-        );
-      } else {
-        // Quote for specific product
+    
+    // Handle product selection
+    if (session.context === 'browsing_products') {
+      if (messageText.startsWith('product_')) {
+        const productId = messageText.replace('product_', '');
         const product = products[productId];
         if (product) {
-          await sendTextMessage(from, 
-            `📝 *Quote Request for ${product.name}*\n\n` +
-            `Please provide:\n` +
-            `1. Required Quantity (Current MOQ: ${product.moq})\n` +
-            `2. Delivery Location\n` +
-            `3. Any special requirements`
-          );
+          session.context = 'viewing_product';
+          session.lastProductViewed = productId;
+          return sendProductDetails(from, product);
         }
+      } else if (messageText === 'back_to_categories') {
+        session.context = 'browsing_categories';
+        return sendCategoryMenu(from);
       }
-      return;
     }
-
-    // Handle track order
-    if (messageText === 'track order') {
-      await sendTextMessage(from, 
-        "📦 *Track Your Order*\n\n" +
-        "Please share your order number or reference ID to check the status."
-      );
-      return;
+    
+    // Handle product detail actions
+    if (session.context === 'viewing_product') {
+      if (messageText === 'add_to_cart') {
+        if (session.lastProductViewed) {
+          const product = products[session.lastProductViewed];
+          if (product) {
+            // Check if product is already in cart
+            const existingItem = session.cart.find(item => item.id === product.id);
+            if (existingItem) {
+              existingItem.quantity += 1;
+            } else {
+              session.cart.push({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                quantity: 1
+              });
+            }
+            await sendTextMessage(from, `Added ${product.name} to your cart.`);
+            return sendProductActionButtons(from, 'view_cart');
+          }
+        }
+      } else if (messageText === 'request_quote') {
+        session.context = 'requesting_quote';
+        return sendTextMessage(from, "Please provide your contact details and quantity requirements, and our sales team will get back to you with a quote within 24 hours.");
+      } else if (messageText === 'back_to_products') {
+        session.context = 'browsing_products';
+        return sendProductListByCategory(from, session.currentCategory);
+      } else if (messageText === 'view_cart') {
+        return sendCartSummary(from);
+      }
     }
-
-    // Handle contact support
-    if (messageText === 'contact support') {
-      await sendTextMessage(from, 
-        "📞 *Contact Our Team*\n\n" +
-        "Sales Inquiries:\n" +
-        "📧 sales@dyescompany.com\n" +
-        "📱 +91 XXXXXXXXXX\n\n" +
-        "Technical Support:\n" +
-        "📧 support@dyescompany.com\n" +
-        "📱 +91 XXXXXXXXXX\n\n" +
-        "We're available Mon-Sat, 9:00 AM - 6:00 PM IST"
+    
+    // Handle cart actions
+    if (messageText === 'view_cart') {
+      return sendCartSummary(from);
+    } else if (messageText === 'checkout') {
+      if (session.cart.length > 0) {
+        session.context = 'checkout';
+        return sendTextMessage(from, "Please provide your shipping details (name, address, email) to proceed with your order.");
+      } else {
+        await sendTextMessage(from, "Your cart is empty. Browse our products to add items to your cart.");
+        return sendWelcomeMenu(from);
+      }
+    } else if (messageText === 'clear_cart') {
+      session.cart = [];
+      await sendTextMessage(from, "Your cart has been cleared.");
+      return sendWelcomeMenu(from);
+    } else if (messageText === 'continue_shopping') {
+      session.context = 'browsing_categories';
+      return sendCategoryMenu(from);
+    }
+    
+    // Handle search products
+    if (messageText === 'search_products') {
+      session.context = 'searching';
+      return sendTextMessage(from, "Please type the name or type of product you're looking for.");
+    }
+    
+    // Handle search query
+    if (session.context === 'searching') {
+      const searchResults = Object.values(products).filter(product => 
+        product.name.toLowerCase().includes(messageText) || 
+        product.type.toLowerCase().includes(messageText) ||
+        product.description.toLowerCase().includes(messageText)
       );
       
-      await sendInteractiveMessage(from, "Quick Actions", "What would you like to do?", [
-        { id: "request_callback", title: "Request Callback" },
-        { id: "browse_products", title: "Browse Products" },
-        { id: "main_menu", title: "Main Menu" }
-      ]);
+      if (searchResults.length > 0) {
+        await sendTextMessage(from, `Found ${searchResults.length} products matching your search:`);
+        return sendSearchResults(from, searchResults);
+      } else {
+        await sendTextMessage(from, "No products found matching your search. Please try different keywords.");
+        return sendWelcomeMenu(from);
+      }
+    }
+    
+    // Handle contact support
+    if (messageText === 'contact_support') {
+      session.context = 'contacting_support';
+      const buttons = [
+        { id: "sales_inquiry", title: "Sales Inquiry" },
+        { id: "technical_support", title: "Technical Support" },
+        { id: "main_menu", title: "Back to Main Menu" }
+      ];
+      return sendInteractiveMessage(from, "Contact Support", "How can our team help you today?", buttons);
+    }
+    
+    // Handle support options
+    if (session.context === 'contacting_support') {
+      if (messageText === 'sales_inquiry') {
+        await sendTextMessage(from, "Please provide details about your inquiry and our sales team will contact you within 24 hours. You can also reach us at sales@dyescompany.com or +1-555-123-4567.");
+        return sendWelcomeMenu(from);
+      } else if (messageText === 'technical_support') {
+        await sendTextMessage(from, "For technical assistance with our products, please describe your issue in detail. Our technical team will respond within 48 hours. For urgent matters, call our technical hotline at +1-555-987-6543.");
+        return sendWelcomeMenu(from);
+      }
+    }
+    
+    // Handle track order
+    if (messageText === 'track_order') {
+      session.context = 'tracking_order';
+      return sendTextMessage(from, "Please enter your order number to track its status.");
+    }
+    
+    // Handle order tracking input
+    if (session.context === 'tracking_order') {
+      // Simulate order tracking
+      const orderStatuses = ['Processing', 'Shipped', 'Delivered', 'On Hold'];
+      const randomStatus = orderStatuses[Math.floor(Math.random() * orderStatuses.length)];
+      const estimatedDelivery = new Date();
+      estimatedDelivery.setDate(estimatedDelivery.getDate() + Math.floor(Math.random() * 10) + 1);
+      
+      await sendTextMessage(from, `Order #${messageText}\n\nStatus: ${randomStatus}\nEstimated Delivery: ${estimatedDelivery.toDateString()}\n\nThank you for your business!`);
+      return sendWelcomeMenu(from);
+    }
+    
+    // Handle request quote
+    if (messageText === 'request_quote') {
+      session.context = 'requesting_quote';
+      return sendTextMessage(from, "Please provide the following information for a quote:\n\n1. Product name/code\n2. Quantity required\n3. Delivery location\n4. Your contact information\n\nOur team will prepare a custom quote for you within 24 hours.");
+    }
+    
+    // Default response if no patterns match
+    if (session.context === 'welcome' || !session.context) {
+      return sendWelcomeMenu(from);
+    }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    await sendTextMessage(from, "I'm sorry, I encountered an error processing your request. Please try again later.");
+  }
+};
+
+// Helper function to send welcome menu
+const sendWelcomeMenu = async (from) => {
+  await sendTextMessage(from, "Welcome to Dyes & Intermediates Bot! How can I assist you today? Select an option:");
+  
+  const sections = [{
+    title: "Main Options",
+    rows: [
+      { id: "browse_products", title: "Browse Products", description: "View our range of dyes and intermediates" },
+      { id: "search_products", title: "Search Products", description: "Find specific products" },
+      { id: "request_quote", title: "Request Quote", description: "Get pricing for bulk orders" },
+      { id: "track_order", title: "Track Order", description: "Check status of your order" },
+      { id: "contact_support", title: "Contact Support", description: "Talk to our sales team" }
+    ]
+  }];
+
+  return sendListMessage(from, 
+    "🎨 Welcome to Dyes & Intermediates Bot!", 
+    "How can I assist you today? Select an option:",
+    sections
+  );
+};
+
+// Helper function to send category menu
+const sendCategoryMenu = async (from) => {
+  const categories = getProductCategories();
+  const rows = Object.entries(categories).map(([key, value]) => ({
+    id: `category_${key}`,
+    title: value.name,
+    description: value.description
+  }));
+  
+  const sections = [{
+    title: "Product Categories",
+    rows: rows
+  }];
+  
+  return sendListMessage(from, 
+    "Product Categories", 
+    "Select a category to browse products:",
+    sections
+  );
+};
+
+// Helper function to send product list by category
+const sendProductListByCategory = async (from, category) => {
+  const categoryProducts = getProductsByCategory(category);
+  
+  if (categoryProducts.length === 0) {
+    await sendTextMessage(from, "No products found in this category.");
+    return sendCategoryMenu(from);
+  }
+  
+  const rows = categoryProducts.map(product => ({
+    id: `product_${product.id}`,
+    title: product.name,
+    description: `${product.type} - ${product.inStock ? 'In Stock' : 'Out of Stock'}`
+  }));
+  
+  // Add back button
+  rows.push({
+    id: "back_to_categories",
+    title: "Back to Categories",
+    description: "Return to category list"
+  });
+  
+  const sections = [{
+    title: "Products",
+    rows: rows
+  }];
+  
+  return sendListMessage(from, 
+    categoryProducts[0].type, 
+    "Select a product to view details:",
+    sections
+  );
+};
+
+// Helper function to send product details
+const sendProductDetails = async (from, product) => {
+  await sendTextMessage(from, formatProductDetails(product));
+  return sendProductActionButtons(from);
+};
+
+// Helper function to send product action buttons
+const sendProductActionButtons = async (from, additionalAction = null) => {
+  const buttons = [
+    { id: "add_to_cart", title: "Add to Cart" },
+    { id: "request_quote", title: "Request Quote" },
+    { id: "back_to_products", title: "Back to Products" }
+  ];
+  
+  if (additionalAction === 'view_cart') {
+    buttons.push({ id: "view_cart", title: "View Cart" });
+  }
+  
+  return sendInteractiveMessage(from, 
+    "Product Actions", 
+    "What would you like to do next?",
+    buttons
+  );
+};
+
+// Helper function to send cart summary
+const sendCartSummary = async (from) => {
+  const session = userSessions[from];
+  
+  if (!session.cart || session.cart.length === 0) {
+    await sendTextMessage(from, "Your cart is empty.");
+    return sendWelcomeMenu(from);
+  }
+  
+  let cartText = "*Your Cart*\n\n";
+  let total = 0;
+  
+  session.cart.forEach((item, index) => {
+    const itemTotal = item.price * item.quantity;
+    total += itemTotal;
+    cartText += `${index + 1}. ${item.name} x ${item.quantity} = $${itemTotal}\n`;
+  });
+  
+  cartText += `\n*Total: $${total}*`;
+  
+  await sendTextMessage(from, cartText);
+  
+  const buttons = [
+    { id: "checkout", title: "Checkout" },
+    { id: "clear_cart", title: "Clear Cart" },
+    { id: "continue_shopping", title: "Continue Shopping" }
+  ];
+  
+  return sendInteractiveMessage(from, 
+    "Cart Actions", 
+    "What would you like to do next?",
+    buttons
+  );
+};
+
+// Helper function to send search results
+const sendSearchResults = async (from, results) => {
+  if (results.length > 10) {
+    results = results.slice(0, 10); // Limit to 10 results
+  }
+  
+  const rows = results.map(product => ({
+    id: `product_${product.id}`,
+    title: product.name,
+    description: `${product.type} - ${product.inStock ? 'In Stock' : 'Out of Stock'}`
+  }));
+  
+  // Add back button
+  rows.push({
+    id: "main_menu",
+    title: "Back to Main Menu",
+    description: "Return to main menu"
+  });
+  
+  const sections = [{
+    title: "Search Results",
+    rows: rows
+  }];
+  
+  return sendListMessage(from, 
+    "Search Results", 
+    "Select a product to view details:",
+    sections
+  );
+};
+
+// Webhook endpoints
+app.get('/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token) {
+    if (mode === 'subscribe' && token === WEBHOOK_VERIFY_TOKEN) {
+      console.log('Webhook verified');
+      res.status(200).send(challenge);
       return;
     }
+  }
+  res.sendStatus(403);
+});
 
-    // Handle search products
-    if (messageText === 'search products') {
-      await sendTextMessage(from, 
-        "🔍 *Search Products*\n\n" +
-        "Please enter the product name, type, or CAS number to search."
-      );
-      return;
+app.post('/webhook', async (req, res) => {
+  try {
+    const body = req.body;
+
+    if (body.object === 'whatsapp_business_account') {
+      body.entry?.forEach(async (entry) => {
+        const changes = entry.changes;
+        
+        changes?.forEach(async (change) => {
+          if (change.field === 'messages') {
+            const messages = change.value.messages;
+            
+            if (messages) {
+              for (const message of messages) {
+                const from = message.from;
+                console.log(`Received message from ${from}:`, message);
+                
+                await handleIncomingMessage(from, message);
+              }
+            }
+          }
+        });
+      });
     }
 
-    // Handle search query (simple implementation)
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).send('Error');
+  }
+});
+
     const searchQuery = messageText.toLowerCase();
     if (searchQuery && searchQuery !== 'hi' && searchQuery !== 'hello') {
       const searchResults = Object.values(products).filter(product => 
@@ -416,10 +799,6 @@ const handleIncomingMessage = async (from, message) => {
       "I'm here to help you with our dyes and chemical products. " +
       "Type 'hi' to see the main menu or ask about our products and services."
     );
-
-  } catch (error) {
-    console.error('Error handling message:', error);
-    await sendTextMessage(from, "Sorry, something went wrong. Please try again later.");
   }
 };
 
