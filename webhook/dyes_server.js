@@ -1,12 +1,63 @@
 const express = require('express');
 const axios = require('axios');
+const morgan = require('morgan');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Check for required environment variables
+function checkRequiredEnvVars() {
+  const requiredVars = ['WHATSAPP_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WEBHOOK_VERIFY_TOKEN'];
+  const missing = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missing.length > 0) {
+    console.warn(`⚠️  Warning: Missing environment variables: ${missing.join(', ')}`);
+    console.warn('Using default values for development. DO NOT use in production!');
+  }
+}
+
+// Call on startup
+checkRequiredEnvVars();
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev')); // HTTP request logging
+
+// Simple rate limiting middleware
+const apiLimiter = (req, res, next) => {
+  // This is a basic implementation. For production, use a package like 'express-rate-limit'
+  if (!req.app.locals.requestCounts) {
+    req.app.locals.requestCounts = {};
+  }
+  
+  const ip = req.ip;
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+  const maxRequests = 100; // limit each IP to 100 requests per windowMs
+  
+  if (!req.app.locals.requestCounts[ip]) {
+    req.app.locals.requestCounts[ip] = {
+      count: 1,
+      resetTime: now + windowMs
+    };
+  } else if (now > req.app.locals.requestCounts[ip].resetTime) {
+    req.app.locals.requestCounts[ip] = {
+      count: 1,
+      resetTime: now + windowMs
+    };
+  } else {
+    req.app.locals.requestCounts[ip].count++;
+    if (req.app.locals.requestCounts[ip].count > maxRequests) {
+      return res.status(429).json({ error: 'Too many requests, please try again later' });
+    }
+  }
+  
+  next();
+};
+
+// Apply rate limiting to API endpoints
+app.use('/webhook', apiLimiter);
 
 // Root route
 app.get('/', (req, res) => {
@@ -15,7 +66,34 @@ app.get('/', (req, res) => {
     <p>Status: Running</p>
     <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
     <p>Webhook URL: /webhook</p>
+    <p>API Status: <a href="/status">Check Status</a></p>
   `);
+});
+
+// Status endpoint with detailed information
+app.get('/status', (req, res) => {
+  const uptime = process.uptime();
+  const uptimeFormatted = {
+    days: Math.floor(uptime / 86400),
+    hours: Math.floor((uptime % 86400) / 3600),
+    minutes: Math.floor((uptime % 3600) / 60),
+    seconds: Math.floor(uptime % 60)
+  };
+  
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: uptimeFormatted,
+    environment: process.env.NODE_ENV || 'development',
+    memory: process.memoryUsage(),
+    version: process.version,
+    webhookConfigured: Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID)
+  });
+});
+
+// Health check endpoint for monitoring
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 // Configuration
@@ -401,14 +479,37 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Error handling middleware
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Not Found', path: req.path });
+});
+
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error', 
+    message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message 
+  });
+});
+
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Dyes & Intermediates WhatsApp Bot running on port ${PORT}`);
-  console.log('📱 Webhook URL: https://your-domain.com/webhook');
+const server = app.listen(PORT, () => {
+  const actualPort = server.address().port;
+  console.log(`🚀 Dyes & Intermediates WhatsApp Bot running on port ${actualPort}`);
+  console.log(`📱 Webhook URL: ${process.env.PUBLIC_URL || 'https://your-domain.com'}/webhook`);
   console.log('🔧 Required environment variables:');
   console.log('   - WHATSAPP_TOKEN');
   console.log('   - WHATSAPP_PHONE_NUMBER_ID'); 
   console.log('   - WEBHOOK_VERIFY_TOKEN');
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
 module.exports = app;
