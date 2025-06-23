@@ -478,7 +478,7 @@ const handleIncomingMessage = async (from, message) => {
       const searchResults = Object.values(products).filter(product => 
         product.name.toLowerCase().includes(messageText) || 
         product.type.toLowerCase().includes(messageText) ||
-        product.description.toLowerCase().includes(messageText)
+        (product.description && product.description.toLowerCase().includes(messageText))
       );
       
       if (searchResults.length > 0) {
@@ -487,6 +487,20 @@ const handleIncomingMessage = async (from, message) => {
       } else {
         await sendTextMessage(from, "No products found matching your search. Please try different keywords.");
         return sendWelcomeMenu(from);
+      }
+    }
+    
+    // Handle direct search query (when user types a product name directly)
+    if (messageText && messageText !== 'hi' && messageText !== 'hello') {
+      const searchResults = Object.values(products).filter(product => 
+        product.name.toLowerCase().includes(messageText) ||
+        product.type.toLowerCase().includes(messageText) ||
+        (product.cas && product.cas.includes(messageText))
+      );
+
+      if (searchResults.length > 0) {
+        await sendTextMessage(from, `Found ${searchResults.length} products matching your search:`);
+        return sendSearchResults(from, searchResults);
       }
     }
     
@@ -762,38 +776,6 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-    const searchQuery = messageText.toLowerCase();
-    if (searchQuery && searchQuery !== 'hi' && searchQuery !== 'hello') {
-      const searchResults = Object.values(products).filter(product => 
-        product.name.toLowerCase().includes(searchQuery) ||
-        product.type.toLowerCase().includes(searchQuery) ||
-        product.cas.includes(searchQuery)
-      );
-
-      if (searchResults.length > 0) {
-        const sections = [{
-          title: "Search Results",
-          rows: searchResults.slice(0, 10).map(product => ({
-            id: `prod_${product.id}`,
-            title: product.name,
-            description: `${product.type} | ${product.packaging}`
-          }))
-        }];
-        
-        await sendListMessage(from, 
-          `🔍 Search Results for "${searchQuery}"`, 
-          "Select a product for details:",
-          sections
-        );
-        return;
-      } else {
-        await sendTextMessage(from, 
-          `No products found matching "${searchQuery}".\n\n` +
-          "Try searching with different keywords or browse our categories."
-        );
-      }
-    }
-
     // Handle direct search query (when user types a product name directly)
     if (messageText && messageText !== 'hi' && messageText !== 'hello') {
       const searchResults = Object.values(products).filter(product => 
@@ -813,25 +795,8 @@ app.post('/webhook', async (req, res) => {
       "I'm here to help you with our dyes and chemical products. " +
       "Type 'hi' to see the main menu or ask about our products and services."
     );
-  }
-};
 
 // Webhook endpoints
-app.get('/webhook', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-
-  if (mode && token) {
-    if (mode === 'subscribe' && token === WEBHOOK_VERIFY_TOKEN) {
-      console.log('Webhook verified');
-      res.status(200).send(challenge);
-      return;
-    }
-  }
-  res.sendStatus(403);
-});
-
 app.post('/webhook', async (req, res) => {
   try {
     const body = req.body;
