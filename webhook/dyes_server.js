@@ -795,7 +795,6 @@ app.post('/webhook', async (req, res) => {
       "I'm here to help you with our dyes and chemical products. " +
       "Type 'hi' to see the main menu or ask about our products and services."
     );
-  }
 }
 
 // Webhook endpoints
