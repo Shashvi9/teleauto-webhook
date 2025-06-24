@@ -386,67 +386,49 @@ const handleIncomingMessage = async (from, message) => {
     console.log(`[${new Date().toISOString()}] Received message from ${from}: ${messageText}`);
     console.log(`[${new Date().toISOString()}] Current user context: ${session.context}`);
 
-    // Reset command
+    // Main logic using if/else if for clear control flow
     if (messageText === 'reset' || messageText === 'restart') {
-      session.context = 'welcome';
-      await sendTextMessage(from, "I've reset our conversation. How can I help you today?");
-      return sendWelcomeMenu(from);
-    }
-
-    // Welcome message and main menu
-    if (messageText.includes('hi') || messageText.includes('hello') || 
-        messageText.includes('start') || messageText === 'main_menu' || session.context === 'welcome') {
-      
-      return sendWelcomeMenu(from);
-    }
-    
-    // Handle main menu selections
-    console.log(`[${new Date().toISOString()}] [BEFORE BROWSE_PRODUCTS] messageText: '${messageText}', current context: '${session.context}'`);
-    if (messageText && messageText.includes('browse_products')) {
-      // Log before update
-      console.log(`[${new Date().toISOString()}] [BEFORE CONTEXT UPDATE] userSessions[${from}]:`, 
-        JSON.stringify(userSessions[from]));
-      
-      // Update the session
-      session.context = 'browsing_categories';
-      userSessions[from] = { ...session }; // Create new object to break reference
-      
-      // Log after update
-      console.log(`[${new Date().toISOString()}] [AFTER CONTEXT UPDATE] userSessions[${from}]:`, 
-        JSON.stringify(userSessions[from]));
-      
-      // Verify the session was saved correctly
-      const verifySession = userSessions[from];
-      console.log(`[${new Date().toISOString()}] [VERIFY SESSION] userSessions[${from}].context:`, 
-        verifySession ? verifySession.context : 'undefined');
-      
-      return sendCategoryMenu(from);
-    }
-    
-    // Handle category selection
-    if (session.context === 'browsing_categories') {
-      if (messageText.startsWith('category_')) {
-        const category = messageText.replace('category_', '');
-        session.context = 'browsing_products';
-        session.currentCategory = category;
-        return sendProductListByCategory(from, category);
-      }
-    }
-    
-    // Handle product selection
-    if (session.context === 'browsing_products') {
-      if (messageText.startsWith('product_')) {
-        const productId = messageText.replace('product_', '');
-        const product = products[productId];
-        if (product) {
-          session.context = 'viewing_product';
-          session.lastProductViewed = productId;
-          return sendProductDetails(from, product);
-        }
-      } else if (messageText === 'back_to_categories') {
+        console.log(`[${new Date().toISOString()}] [CONTROL FLOW] Matched 'reset'`);
+        session.context = 'welcome';
+        userSessions[from] = { ...session };
+        await sendTextMessage(from, "I've reset our conversation. How can I help you today?");
+        return sendWelcomeMenu(from);
+    } else if (messageText && messageText.includes('browse_products')) {
+        console.log(`[${new Date().toISOString()}] [CONTROL FLOW] Matched 'browse_products'`);
         session.context = 'browsing_categories';
+        userSessions[from] = { ...session };
+        console.log(`[${new Date().toISOString()}] [CONTEXT SET] New context: 'browsing_categories'`);
         return sendCategoryMenu(from);
-      }
+    } else if (messageText.includes('hi') || messageText.includes('hello') || messageText.includes('start') || messageText === 'main_menu' || session.context === 'welcome') {
+        console.log(`[${new Date().toISOString()}] [CONTROL FLOW] Matched 'welcome' condition`);
+        session.context = 'welcome'; // Explicitly set context
+        userSessions[from] = { ...session };
+        return sendWelcomeMenu(from);
+    } else if (session.context === 'browsing_categories') {
+        console.log(`[${new Date().toISOString()}] [CONTROL FLOW] Matched 'browsing_categories' context`);
+        if (messageText.startsWith('category_')) {
+            const category = messageText.replace('category_', '');
+            session.context = 'browsing_products';
+            session.currentCategory = category;
+            userSessions[from] = { ...session };
+            return sendProductListByCategory(from, category);
+        }
+    } else if (session.context === 'browsing_products') {
+        console.log(`[${new Date().toISOString()}] [CONTROL FLOW] Matched 'browsing_products' context`);
+        if (messageText.startsWith('product_')) {
+            const productId = messageText.replace('product_', '');
+            const product = products[productId];
+            if (product) {
+                session.context = 'viewing_product';
+                session.lastProductViewed = productId;
+                userSessions[from] = { ...session };
+                return sendProductDetails(from, product);
+            }
+        } else if (messageText === 'back_to_categories') {
+            session.context = 'browsing_categories';
+            userSessions[from] = { ...session };
+            return sendCategoryMenu(from);
+        }
     }
     
     // Handle product detail actions
