@@ -346,27 +346,33 @@ const formatProductDetails = (product) => {
 // Main message handler
 const handleIncomingMessage = async (from, message) => {
   try {
-    // Initialize user session if it doesn't exist
+    // Initialize or update user session with detailed logging
+    console.log(`[${new Date().toISOString()}] [BEFORE SESSION INIT] userSessions[${from}]:`, 
+      JSON.stringify(userSessions[from] || 'undefined'));
+    
     if (!userSessions[from]) {
       userSessions[from] = {
-        lastInteraction: Date.now(),
         context: 'welcome',
         cart: [],
-        lastProductViewed: null
+        lastInteraction: Date.now()
       };
+      console.log(`[${new Date().toISOString()}] [NEW SESSION CREATED]`);
     } else {
       // Update last interaction time
       userSessions[from].lastInteraction = Date.now();
+      console.log(`[${new Date().toISOString()}] [EXISTING SESSION UPDATED]`);
     }
     
+    // Get reference to the session
     const session = userSessions[from];
-    
+    console.log(`[${new Date().toISOString()}] [SESSION REFERENCE]`, JSON.stringify(session));
     const messageText = message.text?.body?.toLowerCase() || 
                      message.interactive?.button_reply?.id?.toLowerCase() ||
                      message.interactive?.list_reply?.id?.toLowerCase() || '';
     
-    console.log(`Received message from ${from}: ${messageText}`);
-    console.log(`User context: ${session.context}`);
+    // Log incoming message and current context
+    console.log(`[${new Date().toISOString()}] Received message from ${from}: ${messageText}`);
+    console.log(`[${new Date().toISOString()}] Current user context: ${session.context}`);
 
     // Reset command
     if (messageText === 'reset' || messageText === 'restart') {
@@ -383,13 +389,25 @@ const handleIncomingMessage = async (from, message) => {
     }
     
     // Handle main menu selections
-    console.log(`Before context change - messageText: ${messageText}, current context: ${session.context}`);
+    console.log(`[${new Date().toISOString()}] [BEFORE BROWSE_PRODUCTS] messageText: ${messageText}, current context: ${session.context}`);
     if (messageText === 'browse_products') {
-      // Update the session context
+      // Log before update
+      console.log(`[${new Date().toISOString()}] [BEFORE CONTEXT UPDATE] userSessions[${from}]:`, 
+        JSON.stringify(userSessions[from]));
+      
+      // Update the session
       session.context = 'browsing_categories';
-      // Explicitly save the updated session back to userSessions
-      userSessions[from] = { ...session };
-      console.log(`After context change - new context: ${session.context}`);
+      userSessions[from] = { ...session }; // Create new object to break reference
+      
+      // Log after update
+      console.log(`[${new Date().toISOString()}] [AFTER CONTEXT UPDATE] userSessions[${from}]:`, 
+        JSON.stringify(userSessions[from]));
+      
+      // Verify the session was saved correctly
+      const verifySession = userSessions[from];
+      console.log(`[${new Date().toISOString()}] [VERIFY SESSION] userSessions[${from}].context:`, 
+        verifySession ? verifySession.context : 'undefined');
+      
       return sendCategoryMenu(from);
     }
     
