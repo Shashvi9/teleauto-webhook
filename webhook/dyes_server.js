@@ -776,21 +776,6 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-    // Handle direct search query (when user types a product name directly)
-    if (messageText && messageText !== 'hi' && messageText !== 'hello') {
-      const searchResults = Object.values(products).filter(product => 
-        product.name.toLowerCase().includes(messageText) ||
-        product.type.toLowerCase().includes(messageText) ||
-        (product.cas && product.cas.includes(messageText))
-      );
-
-      if (searchResults.length > 0) {
-        await sendTextMessage(from, `Found ${searchResults.length} products matching your search:`);
-        return sendSearchResults(from, searchResults);
-      }
-    }
-}
-
 // Webhook endpoints
 app.post('/webhook', async (req, res) => {
   try {
