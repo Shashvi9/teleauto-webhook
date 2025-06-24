@@ -383,8 +383,10 @@ const handleIncomingMessage = async (from, message) => {
     }
     
     // Handle main menu selections
+    console.log(`Before context change - messageText: ${messageText}, current context: ${session.context}`);
     if (messageText === 'browse_products') {
       session.context = 'browsing_categories';
+      console.log(`After context change - new context: ${session.context}`);
       return sendCategoryMenu(from);
     }
     
