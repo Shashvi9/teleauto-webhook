@@ -366,9 +366,21 @@ const handleIncomingMessage = async (from, message) => {
     // Get reference to the session
     const session = userSessions[from];
     console.log(`[${new Date().toISOString()}] [SESSION REFERENCE]`, JSON.stringify(session));
-    const messageText = message.text?.body?.toLowerCase() || 
-                     message.interactive?.button_reply?.id?.toLowerCase() ||
-                     message.interactive?.list_reply?.id?.toLowerCase() || '';
+    
+    // Debug log the entire message to see its structure
+    console.log(`[${new Date().toISOString()}] [RAW MESSAGE]`, JSON.stringify(message));
+    
+    // Extract message text from different possible locations
+    let messageText = '';
+    if (message.text?.body) {
+      messageText = message.text.body.toLowerCase();
+    } else if (message.interactive?.list_reply?.id) {
+      messageText = message.interactive.list_reply.id.toLowerCase();
+    } else if (message.interactive?.button_reply?.id) {
+      messageText = message.interactive.button_reply.id.toLowerCase();
+    }
+    
+    console.log(`[${new Date().toISOString()}] [EXTRACTED MESSAGE TEXT]`, messageText);
     
     // Log incoming message and current context
     console.log(`[${new Date().toISOString()}] Received message from ${from}: ${messageText}`);
@@ -389,8 +401,8 @@ const handleIncomingMessage = async (from, message) => {
     }
     
     // Handle main menu selections
-    console.log(`[${new Date().toISOString()}] [BEFORE BROWSE_PRODUCTS] messageText: ${messageText}, current context: ${session.context}`);
-    if (messageText === 'browse_products') {
+    console.log(`[${new Date().toISOString()}] [BEFORE BROWSE_PRODUCTS] messageText: '${messageText}', current context: '${session.context}'`);
+    if (messageText && messageText.includes('browse_products')) {
       // Log before update
       console.log(`[${new Date().toISOString()}] [BEFORE CONTEXT UPDATE] userSessions[${from}]:`, 
         JSON.stringify(userSessions[from]));
